@@ -14,12 +14,12 @@ class HeartbeatClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
 
   val logger = LoggerFactory.getLogger(classOf[HeartbeatClient])
 
-  def pipeline: HttpPipeline[HttpRequest, HttpResponse] = sendReceive
+  def pipeline: HttpPipeline[HttpResponse] = sendReceive
 
   def start(healthCheck: HealthCheck): Unit = {
     import actorSystem.dispatcher
     actorSystem.scheduler.schedule(config.heartbeat.interval, config.heartbeat.interval) {
-      Try {
+      healthCheck() map { _ ⇒
         logger.info("sending heartbeat")
       } onFailure {
         logger.error("heartbeat failed", _)

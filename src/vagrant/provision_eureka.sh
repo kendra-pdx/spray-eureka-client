@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -ex
+#!/usr/bin/env bash
 
 # Taken and modified for ubuntu from
 # https://github.com/hudl/fargo/blob/master/provision_eureka.sh
