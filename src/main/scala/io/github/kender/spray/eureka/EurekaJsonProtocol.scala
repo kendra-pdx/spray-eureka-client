@@ -7,7 +7,6 @@ trait EurekaJsonProtocol extends DefaultJsonProtocol {
   implicit lazy val leaseInfoFormat = jsonFormat0(LeaseInfo)
   implicit lazy val metaDataFormat = jsonFormat0(MetaData)
   implicit lazy val registrationFormat = jsonFormat14(Registration)
-  implicit lazy val instanceFormat = jsonFormat1(Instance)
 }
 
 object EurekaJsonProtocol extends EurekaJsonProtocol

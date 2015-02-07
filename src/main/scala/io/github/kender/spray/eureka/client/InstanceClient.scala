@@ -4,12 +4,10 @@ import scala.concurrent._
 
 import akka.actor.ActorSystem
 import spray.client.pipelining._
-import spray.http.ContentTypes.`application/json`
-import spray.http.HttpHeaders.{RawHeader, `Content-Type`}
 import spray.http._
 import spray.json._
 
-import io.github.kender.spray.eureka.{DataCenterInfo, Registration, Instance}
+import io.github.kender.spray.eureka.{DataCenterInfo, Registration}
 import org.slf4j.LoggerFactory
 
 class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
@@ -18,7 +16,9 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
 
   import actorSystem.dispatcher
   import io.github.kender.spray.eureka.EurekaJsonProtocol._
-  import Loggable._
+  import io.github.kender.spray.eureka.client.Loggable._
+
+  type Pipeline = HttpRequest ⇒ Future[HttpResponse]
 
   val logger = LoggerFactory.getLogger(classOf[InstanceClient])
 
@@ -26,7 +26,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
     override def asLogMessage(it: HttpRequest): String = s"httpRequest $it"
   }
 
-  def pipeline: HttpPipeline[HttpResponse] = {
+  def pipeline: Pipeline = {
     sendReceive
   }
 
