@@ -18,11 +18,12 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   implicit val actorSystem = ActorSystem()
   import actorSystem.dispatcher
 
-  val http: HttpRequest ⇒ Future[String] = {
-    sendReceive ~> unmarshal[String]
-  }
 
   def shim(): Future[String] = {
+    val http: HttpRequest ⇒ Future[String] = {
+      sendReceive ~> unmarshal[String]
+    }
+
     for {
       r1 ← http(Get("http://[::1]:6001/random?length=10"))
       r2 ← http(Get("http://[::1]:6001/random?length=16"))
@@ -36,7 +37,7 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
     Random.alphanumeric.take(length).mkString
   }
 
-  startServer("::1", 6001) {
+  startServer("::1", 6001, backlog = 500) {
     (get & path("random") & parameter('length.?)) { length ⇒
       onSuccess(random(length.map(_.toInt).getOrElse(32))) { random ⇒
         complete(random)
