@@ -46,6 +46,7 @@ class HeartbeatClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
     }
 
     actorSystem.registerOnTermination {
+      // when the actor system shuts down, stop sending heartbeats
       heartbeat.cancel()
     }
   }

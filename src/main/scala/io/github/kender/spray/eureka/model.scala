@@ -6,7 +6,11 @@ case class LeaseInfo()
 
 case class MetaData()
 
-case class Registration(
+case class Application(
+  name: String,
+  instances: Seq[InstanceInfo])
+
+case class InstanceInfo(
   hostName: String,
   app: String,
   ipAddr: String,

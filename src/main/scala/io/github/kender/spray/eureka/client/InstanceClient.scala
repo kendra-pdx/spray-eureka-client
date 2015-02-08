@@ -7,7 +7,7 @@ import spray.client.pipelining._
 import spray.http._
 import spray.json._
 
-import io.github.kender.spray.eureka.{DataCenterInfo, Registration}
+import io.github.kender.spray.eureka.{DataCenterInfo, InstanceInfo}
 import org.slf4j.LoggerFactory
 
 class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
@@ -32,7 +32,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
   }
 
   def register(): Future[InstanceId] = {
-    val registration = Registration(
+    val registration = InstanceInfo(
       config.instance.hostName,
       config.instance.appId,
       config.instance.ipAddress,

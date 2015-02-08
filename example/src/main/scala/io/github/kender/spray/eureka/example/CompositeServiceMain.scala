@@ -9,7 +9,7 @@ import spray.client.pipelining._
 import spray.http._
 import spray.routing.{Directives, SimpleRoutingApp}
 
-import io.github.kender.spray.eureka.client.{HeartbeatClient, InstanceClient, EurekaConfig}
+import io.github.kender.spray.eureka.client.{RestClient, HeartbeatClient, InstanceClient, EurekaConfig}
 import org.slf4j.LoggerFactory
 
 object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
@@ -18,11 +18,11 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   implicit val actorSystem = ActorSystem()
   import actorSystem.dispatcher
 
+  val eurekaConfig = EurekaConfig(actorSystem)
+  val backendRestClient = new RestClient(eurekaConfig, "backend")
 
   def shim(): Future[String] = {
-    val http: HttpRequest ⇒ Future[String] = {
-      sendReceive ~> unmarshal[String]
-    }
+    val http = backendRestClient(sendReceive ~> unmarshal[String]) _
 
     for {
       r1 ← http(Get("http://[::1]:6001/random?length=10"))
@@ -50,7 +50,6 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
     }
   }
 
-  val eurekaConfig = EurekaConfig(actorSystem)
   new InstanceClient(eurekaConfig) {
     register() map { instanceId ⇒
       new HeartbeatClient(eurekaConfig) {
