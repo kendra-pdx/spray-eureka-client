@@ -19,6 +19,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
   import io.github.kender.spray.eureka.client.Loggable._
 
   type Pipeline = HttpRequest ⇒ Future[HttpResponse]
+  type InstanceId = String
 
   val logger = LoggerFactory.getLogger(classOf[InstanceClient])
 
@@ -30,7 +31,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
     sendReceive
   }
 
-  def register(): Future[Unit] = {
+  def register(): Future[InstanceId] = {
     val registration = Registration(
       config.instance.hostName,
       config.instance.appId,
@@ -50,6 +51,6 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
       Post(
         s"${config.serverUrl}/v2/apps/${config.instance.appId}",
         JsObject("instance" → registration.toJson))
-    }) map { _ ⇒}
+    }) map { _ ⇒ config.instance.hostName }
   }
 }
