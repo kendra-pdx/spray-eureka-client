@@ -4,7 +4,7 @@ lazy val common = Seq(
   scalaVersion := "2.11.5"
 )
 
-lazy val root = project.in(file("."))
+lazy val root: Project = project.in(file("."))
   .settings(common: _*)
   .settings(
     name := "spray-eureka-client",
@@ -21,10 +21,10 @@ lazy val root = project.in(file("."))
       modules.logback,
       modules.akka("slf4j")
     ) map (_ % "test")
-
   )
 
-lazy val example = project.in(file("example"))
+lazy val example: Project = project.in(file("example"))
+  .dependsOn(root)
   .settings(common ++ Revolver.settings: _*)
   .settings(
     libraryDependencies ++= Seq(
@@ -39,7 +39,6 @@ lazy val example = project.in(file("example"))
       modules.logback
     )
   )
-  .dependsOn(root)
 
 lazy val modules = new {
   def spray(name: String, version: String = "1.3.2") = "io.spray" %% s"spray-$name" % version

@@ -18,7 +18,7 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   implicit val actorSystem = ActorSystem()
   import actorSystem.dispatcher
 
-  def http: HttpRequest ⇒ Future[String] = {
+  val http: HttpRequest ⇒ Future[String] = {
     sendReceive ~> unmarshal[String]
   }
 
