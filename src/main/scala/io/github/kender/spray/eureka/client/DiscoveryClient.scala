@@ -7,26 +7,33 @@ import spray.client.pipelining._
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
 
-import io.github.kender.spray.eureka.Application
+import io.github.kender.spray.eureka.{Applications, Application}
 
+object DiscoveryClient {
+  import io.github.kender.spray.eureka.EurekaJsonProtocol._
+  import spray.json._
+
+  case class VipLookupResponse(applications: Applications)
+  implicit val vipLookupResponseFormat = jsonFormat1(VipLookupResponse)
+}
 class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSystem) {
   import actorSystem.dispatcher
-  import io.github.kender.spray.eureka.EurekaJsonProtocol._
   import spray.httpx.SprayJsonSupport._
+  import DiscoveryClient._
 
-  def pipeline: HttpRequest ⇒ Future[Option[Application]] = {
+  def pipeline: HttpRequest ⇒ Future[Option[VipLookupResponse]] = {
     addHeader(RawHeader("Accept", "application/json")) ~>
       sendReceive ~>
-      unmarshal[Option[Application]]
+      unmarshal[Option[VipLookupResponse]]
   }
 
   def vips(vipAddress: String): Future[Option[Application]] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/vips/$vipAddress"
-    pipeline(Get(uri))
+    pipeline(Get(uri)).map(_.map(_.applications.application))
   }
 
   def svips(vipAddress: String): Future[Option[Application]] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/svips/$vipAddress"
-    pipeline(Get(uri))
+    pipeline(Get(uri)).map(_.map(_.applications.application))
   }
 }

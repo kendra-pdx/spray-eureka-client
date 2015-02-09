@@ -16,6 +16,7 @@ object RestClientConfig {
   object LoadBalancingStrategy {
     case object Random extends LoadBalancingStrategy
     case object RoundRobin extends LoadBalancingStrategy
+    case object First extends LoadBalancingStrategy
   }
 
   sealed trait LoadBalancingLocality
@@ -106,9 +107,10 @@ object EurekaConfig {
           }
         }
 
-        override lazy val loadBalancingStrategy = restClientConfig.getString("loadBalancing").toLowerCase match {
+        override lazy val loadBalancingStrategy = restClientConfig.getString("loadBalancingStrategy").toLowerCase match {
           case "random" ⇒ LoadBalancingStrategy.Random
           case "round-robin" ⇒ LoadBalancingStrategy.RoundRobin
+          case "first" ⇒ LoadBalancingStrategy.First
           case unknown ⇒ sys.error(s"unsupported load balancing strategy: $unknown")
         }
 

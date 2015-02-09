@@ -2,6 +2,7 @@ package io.github.kender.spray.eureka.client
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.event.LoggingReceive
@@ -22,7 +23,8 @@ object VipLookup {
     lookupTimeout: Timeout)(
     implicit actorSystem: ActorSystem)
   : VipLookup = new VipLookup {
-    private val props: Props = Props(new VipLookupActor(discoveryClient, vip, useSecure, refreshInterval))
+    private val props = Props(new VipLookupActor(discoveryClient, vip, useSecure, refreshInterval))
+
     val vipLookupActor = actorSystem.actorOf(props)
 
     import akka.pattern.ask
@@ -63,6 +65,10 @@ class VipLookupActor(
     case RefreshCache(respondTo) ⇒
       vips(vip)
         .map(app ⇒ SetCache(app.fold(Seq.empty[InstanceInfo])(_.instances), respondTo))
+        .recover { case NonFatal(t) ⇒
+          log.error(t, t.getMessage)
+          SetCache(Nil, respondTo)
+        }
         .pipeTo(self)
 
     case SetCache(newCache, respondTo) ⇒ 

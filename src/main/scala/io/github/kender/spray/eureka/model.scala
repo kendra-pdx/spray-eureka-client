@@ -10,6 +10,9 @@ case class Application(
   name: String,
   instances: Seq[InstanceInfo])
 
+case class Applications(
+    application: Application)
+
 case class InstanceInfo(
   hostName: String,
   app: String,
