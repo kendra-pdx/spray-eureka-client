@@ -18,8 +18,6 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   import io.github.kender.spray.eureka.example.CompositeServiceMain.actorSystem.dispatcher
 
   val eurekaConfig = EurekaConfig(actorSystem)
-  val backendRestClient = RestClient(eurekaConfig, "backend")
-  val backend = backendRestClient(sendReceive ~> unmarshal[String]) _
 
   new InstanceClient(eurekaConfig) {
     register() map { instanceId ⇒
@@ -29,6 +27,8 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
     }
   }
 
+  val backendRestClient = RestClient(eurekaConfig, "backend")
+  val backend = backendRestClient(sendReceive ~> unmarshal[String]) _
   def shim(): Future[String] = for {
     r1 ← backend(Get("/random?length=10"))
     r2 ← backend(Get("/random?length=16"))
