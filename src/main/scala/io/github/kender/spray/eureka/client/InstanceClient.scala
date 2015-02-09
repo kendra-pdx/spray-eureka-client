@@ -10,6 +10,11 @@ import spray.json._
 import io.github.kender.spray.eureka.{DataCenterInfo, InstanceInfo}
 import org.slf4j.LoggerFactory
 
+/**
+ * A client for managing a service instance with Eureka
+ * @param config EurekaConfig
+ * @param actorSystem ActorSystem
+ */
 class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
 
   import spray.httpx.SprayJsonSupport._
@@ -18,23 +23,30 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
   import io.github.kender.spray.eureka.EurekaJsonProtocol._
   import io.github.kender.spray.eureka.client.Loggable._
 
-  type Pipeline = HttpRequest ⇒ Future[HttpResponse]
   type InstanceId = String
 
   val logger = LoggerFactory.getLogger(classOf[InstanceClient])
 
-  implicit object RequestLogger extends Loggable[HttpRequest] {
+  private implicit object RequestLogger extends Loggable[HttpRequest] {
     override def asLogMessage(it: HttpRequest): String = s"httpRequest $it"
   }
 
-  def pipeline: Pipeline = {
+  private def pipeline: HttpRequest ⇒ Future[HttpResponse] = {
     sendReceive
   }
 
+  /**
+   * de-register the instance from Eureka
+   * @return A future which completes when after the call is complete.
+   */
   def deRegister(): Future[Unit] = {
     pipeline(Delete(s"${config.serverUrl}/v2/apps/${config.instance.appId}")).map(_ ⇒ Unit)
   }
 
+  /**
+   * register the instance with Eureka
+   * @return A future containing the instance id which completes when after the call is complete.
+   */
   def register(): Future[InstanceId] = {
     val registration = InstanceInfo(
       config.instance.hostName,

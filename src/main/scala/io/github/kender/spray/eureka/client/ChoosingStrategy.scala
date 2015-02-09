@@ -14,12 +14,15 @@ object ChoosingStrategy {
   }
   
   object AlwaysPickFirst extends ChoosingStrategy {
-    override def apply[R](items: Seq[R]) = items.head
+    override def apply[R](items: Seq[R]) = {
+      assert(items.size > 0, "must choose from at least 1 item")
+      items.head
+    }
   }
   
   object Random extends ChoosingStrategy {
     override def apply[R](items: Seq[R]) = {
-      assert(items.size > 0)
+      assert(items.size > 0, "must choose from at least 1 item")
       items(util.Random.nextInt(items.size))
     }
   }
@@ -27,6 +30,7 @@ object ChoosingStrategy {
   case class RoundRobin() extends ChoosingStrategy {
     val counter = new AtomicLong()
     override def apply[R](items: Seq[R]) = {
+      assert(items.size > 0, "must choose from at least 1 item")
       items((counter.incrementAndGet() % items.size).toInt)
     }
   }
