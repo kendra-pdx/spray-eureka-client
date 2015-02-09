@@ -30,18 +30,18 @@ object VipLookup {
     import akka.pattern.ask
     import actorSystem.dispatcher
 
-    override def apply() = vipLookupActor.ask(VipLookupActor.GetCache)(lookupTimeout)
-      .mapTo[VipLookupActor.GetCacheResponse]
+    override def apply() = vipLookupActor.ask(VipLookupActor.GetInstances)(lookupTimeout)
+      .mapTo[VipLookupActor.GetInstancesResponse]
       .map { _.cache }
   }
 }
 
 object VipLookupActor {
   sealed trait Protocol
-  case class RefreshCache(respondTo: Seq[ActorRef] = Nil) extends Protocol
-  case class SetCache(cache: Seq[InstanceInfo], respondTo: Seq[ActorRef])
-  case object GetCache extends Protocol
-  case class GetCacheResponse(cache: Seq[InstanceInfo]) extends Protocol
+  case class RefreshInstances(respondTo: Seq[ActorRef] = Nil) extends Protocol
+  case class SetInstances(instances: Seq[InstanceInfo], respondTo: Seq[ActorRef])
+  case object GetInstances extends Protocol
+  case class GetInstancesResponse(cache: Seq[InstanceInfo]) extends Protocol
 }
 
 class VipLookupActor(
@@ -53,37 +53,39 @@ class VipLookupActor(
   import akka.pattern.pipe
   import context.dispatcher
 
-  var instanceInfos: Seq[InstanceInfo] = Nil
+  var instances: Seq[InstanceInfo] = Nil
   
-  val vips = if (useSecure) {
+  val discover = if (useSecure) {
     discoveryClient.svips _
   } else {
     discoveryClient.vips _
   }
 
   override def receive = LoggingReceive {
-    case RefreshCache(respondTo) ⇒
-      vips(vip)
-        .map(app ⇒ SetCache(app.fold(Seq.empty[InstanceInfo])(_.instances), respondTo))
+    case RefreshInstances(respondTo) ⇒
+      log.debug("refreshing instances for {}", vip)
+      discover(vip)
+        .map(app ⇒ SetInstances(app.fold(Seq.empty[InstanceInfo])(_.instances), respondTo))
         .recover { case NonFatal(t) ⇒
           log.error(t, t.getMessage)
-          SetCache(Nil, respondTo)
+          SetInstances(Nil, respondTo)
         }
         .pipeTo(self)
 
-    case SetCache(newCache, respondTo) ⇒ 
-      instanceInfos = newCache
-      respondTo map { _ ! GetCacheResponse(instanceInfos)}
-      
-    case GetCache if instanceInfos.nonEmpty ⇒
-      sender ! GetCacheResponse(instanceInfos)
+    case SetInstances(newInstances, respondTo) ⇒
+      log.debug("updating known instances for {}", vip)
+      instances = newInstances
+      respondTo map { _ ! GetInstancesResponse(instances)}
 
-    case GetCache if instanceInfos.isEmpty ⇒
-      self ! RefreshCache(sender :: Nil)
+    case GetInstances if instances.isEmpty ⇒
+      self ! RefreshInstances(sender :: Nil)
+
+    case GetInstances ⇒
+      sender ! GetInstancesResponse(instances)
   }
 
   override def preStart() = {
-    context.system.scheduler.schedule(0.millis, refreshInterval, self, RefreshCache())
+    context.system.scheduler.schedule(0.millis, refreshInterval, self, RefreshInstances())
   }
 }
 

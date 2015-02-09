@@ -21,7 +21,7 @@ class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSys
   import spray.httpx.SprayJsonSupport._
   import DiscoveryClient._
 
-  def pipeline: HttpRequest ⇒ Future[Option[VipLookupResponse]] = {
+  def http: HttpRequest ⇒ Future[Option[VipLookupResponse]] = {
     addHeader(RawHeader("Accept", "application/json")) ~>
       sendReceive ~>
       unmarshal[Option[VipLookupResponse]]
@@ -29,11 +29,11 @@ class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSys
 
   def vips(vipAddress: String): Future[Option[Application]] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/vips/$vipAddress"
-    pipeline(Get(uri)).map(_.map(_.applications.application))
+    http(Get(uri)).map(_.map(_.applications.application))
   }
 
   def svips(vipAddress: String): Future[Option[Application]] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/svips/$vipAddress"
-    pipeline(Get(uri)).map(_.map(_.applications.application))
+    http(Get(uri)).map(_.map(_.applications.application))
   }
 }

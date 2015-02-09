@@ -1,7 +1,5 @@
 package io.github.kender.spray.eureka
 
-import scala.reflect.ClassTag
-
 import spray.json._
 
 trait EurekaJsonProtocol extends DefaultJsonProtocol {

@@ -1,5 +1,6 @@
 package io.github.kender.spray.eureka.client
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
@@ -64,9 +65,8 @@ object EurekaConfig {
 
   def apply(config: Config = ConfigFactory.load().getConfig(baseConfigKey)) = new EurekaConfig {
     override lazy val serverUrl = {
-      var url = config.getString("server.url")
-      while (url endsWith "/") url = url.init
-      url
+      @tailrec def strip(url: String): String = if (!(url endsWith "/")) url else strip(url.init)
+      strip(config.getString("server.url"))
     }
 
     override lazy val heartbeat: EurekaHeartbeatConfig = new EurekaHeartbeatConfig {

@@ -21,13 +21,19 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   val backendRestClient = RestClient(eurekaConfig, "backend")
   val backend = backendRestClient(sendReceive ~> unmarshal[String]) _
 
-  def shim(): Future[String] = {
-    for {
-      r1 ← backend(Get("/random?length=10"))
-      r2 ← backend(Get("/random?length=16"))
-    } yield {
-      r1 + ":" + r2
+  new InstanceClient(eurekaConfig) {
+    register() map { instanceId ⇒
+      new HeartbeatClient(eurekaConfig) {
+        start(() ⇒ Success {/* OK */}, instanceId)
+      }
     }
+  }
+
+  def shim(): Future[String] = for {
+    r1 ← backend(Get("/random?length=10"))
+    r2 ← backend(Get("/random?length=16"))
+  } yield {
+    r1 + ":" + r2
   }
 
   def random(length: Int): Future[String] = successful {
@@ -43,14 +49,6 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
     (get & pathEndOrSingleSlash) {
       onSuccess(shim()) { value ⇒
         complete(value)
-      }
-    }
-  }
-
-  new InstanceClient(eurekaConfig) {
-    register() map { instanceId ⇒
-      new HeartbeatClient(eurekaConfig) {
-        start(() ⇒ Success {/* OK */}, instanceId)
       }
     }
   }

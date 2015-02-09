@@ -39,7 +39,7 @@ class EurekaRestClient(eurekaConfig: EurekaConfig, restClientId: String)(implici
       failed(new NoHostsForVipException(restClientConfig.vipAddress, restClientConfig.useSecure))
     } else {
       //todo: filter by locality
-      val local = instances
+      val local = instances.filter(_.status.toLowerCase == "up")
       successful(choiceStrategy(local))
     }
   }

@@ -31,6 +31,10 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
     sendReceive
   }
 
+  def deRegister(): Future[Unit] = {
+    pipeline(Delete(s"${config.serverUrl}/v2/apps/${config.instance.appId}")).map(_ ⇒ Unit)
+  }
+
   def register(): Future[InstanceId] = {
     val registration = InstanceInfo(
       config.instance.hostName,

@@ -11,7 +11,7 @@ case class Application(
   instances: Seq[InstanceInfo])
 
 case class Applications(
-    application: Application)
+  application: Application)
 
 case class InstanceInfo(
   hostName: String,
