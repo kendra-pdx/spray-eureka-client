@@ -63,9 +63,9 @@ class EurekaRestClient(eurekaConfig: EurekaConfig, restClientId: String)(implici
   private def uriOf(instanceInfo: InstanceInfo): Future[Uri] = Future {
     val uri = Uri().withHost(instanceInfo.hostName)
     if (restClientConfig.useSecure) {
-      uri.withScheme("https").withPort(instanceInfo.securePort)
+      uri.withScheme("https").withPort(instanceInfo.securePortNumber)
     } else {
-      uri.withScheme("http").withPort(instanceInfo.port.getOrElse(0))
+      uri.withScheme("http").withPort(instanceInfo.portNumber.getOrElse(0))
     }
   }
 

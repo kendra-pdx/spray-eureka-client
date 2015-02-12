@@ -44,11 +44,18 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   }
 
   // this function implements the "GET /" route
-  def shim(): Future[String] = for {
-    r1 ← backend(Get("/random?length=10"))
-    r2 ← backend(Get("/random?length=16"))
-  } yield {
-    r1 + ":" + r2
+  def shim(): Future[String] = {
+    // these are independent, so they can be declared head of the for-comprehension
+    val firstRequest  = backend(Get("/random?length=10"))
+    val secondRequest = backend(Get("/random?length=16"))
+
+    // when both requests yield a response, combine them into a single value
+    for {
+      r1 ← firstRequest
+      r2 ← secondRequest
+    } yield {
+      r1 + ":" + r2
+    }
   }
 
   // this function implements the "GET /random?length" route

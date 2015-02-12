@@ -1,5 +1,8 @@
 package io.github.kender.spray.eureka.client
 
+import org.json4s.{DefaultFormats, Formats}
+import spray.httpx.Json4sJacksonSupport
+
 import scala.concurrent.Future
 
 import akka.actor.ActorSystem
@@ -10,10 +13,8 @@ import spray.http._
 import io.github.kender.spray.eureka.{Applications, Application}
 
 object DiscoveryClient {
-  import io.github.kender.spray.eureka.EurekaJsonProtocol._
 
   case class VipLookupResponse(applications: Applications)
-  implicit val vipLookupResponseFormat = jsonFormat1(VipLookupResponse)
 }
 
 /**
@@ -21,10 +22,11 @@ object DiscoveryClient {
  * @param eurekaConfig EurekaConfig
  * @param actorSystem ActorSystem
  */
-class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSystem) {
+class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSystem) extends Json4sJacksonSupport {
   import actorSystem.dispatcher
-  import spray.httpx.SprayJsonSupport._
   import DiscoveryClient._
+
+  override implicit def json4sJacksonFormats: Formats = DefaultFormats
 
   private def http: HttpRequest ⇒ Future[Option[VipLookupResponse]] = {
     addHeader(RawHeader("Accept", "application/json")) ~>
