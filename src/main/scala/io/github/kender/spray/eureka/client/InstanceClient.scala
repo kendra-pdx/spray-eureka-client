@@ -52,7 +52,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) ex
    * register the instance with Eureka
    * @return A future containing the instance id which completes when after the call is complete.
    */
-  def register(): Future[InstanceId] = {
+  def register(status: String = "UP", dataCenterInfo: DataCenterInfo = DataCenterInfo.myOwn): Future[InstanceId] = {
     logger.info("registering instance: {}", config.instance.appId)
     val instance = InstanceInfo(
       config.instance.hostName,
@@ -60,13 +60,13 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) ex
       config.instance.ipAddress,
       config.instance.vipAddress,
       config.instance.secureVipAddress,
-      "UP",
+      status,
       Some(Port(config.instance.port.toString)),
       Port(config.instance.securePort.toString),
       config.instance.homePageUrl,
       config.instance.statusPageUrl,
       config.instance.healthCheckUrl,
-      DataCenterInfo()
+      dataCenterInfo
     )
 
     pipeline(debugIt(logger) {

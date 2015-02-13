@@ -2,7 +2,23 @@ package io.github.kender.spray.eureka
 
 import scala.util.control.NonFatal
 
-case class DataCenterInfo(name: String = "MyOwn")
+case class AmazonMetaData(
+  `instance-id`: String,
+  `ami-id`: String,
+  `availability-zone`: String,
+  `hostname`: String,
+  `public-ipv4`: String,
+  `public-hostname`: String,
+  `instance-type`: String)
+
+case class DataCenterInfo(
+  name: String = "MyOwn",
+  metadata: Option[AmazonMetaData] = None)
+
+object DataCenterInfo {
+  val myOwn = DataCenterInfo("MyOwn")
+  def amazon(meta: AmazonMetaData) = DataCenterInfo("Amazon", Option(meta))
+}
 
 case class LeaseInfo()
 
@@ -16,8 +32,7 @@ case class Applications(
   application: Application)
 
 case class Registration(
-  instance: InstanceInfo
-  )
+  instance: InstanceInfo)
 
 case class Port(
   // thanks, jaxb
