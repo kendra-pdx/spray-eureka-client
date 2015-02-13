@@ -41,9 +41,10 @@ class HeartbeatClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
    */
   def start(healthCheck: HealthCheck, instanceId: String): Unit = {
     import actorSystem.dispatcher
+    logger.info("starting heartbeats")
     val heartbeat = actorSystem.scheduler.schedule(config.heartbeat.interval, config.heartbeat.interval) {
       healthCheck() map { _ ⇒
-        logger.debug("sending heartbeat")
+        logger.debug("\uD83D\uDC93")
         val url = s"${config.serverUrl}/v2/apps/${config.instance.appId}/$instanceId"
         pipeline(Put(url)) map { response ⇒
           if (response.status.isFailure) {

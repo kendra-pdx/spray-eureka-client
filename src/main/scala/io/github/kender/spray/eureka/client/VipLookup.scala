@@ -65,7 +65,7 @@ class VipLookupActor(
     case RefreshInstances(respondTo) ⇒
       log.debug("refreshing instances for {}", vip)
       discover(vip)
-        .map(app ⇒ SetInstances(app.fold(Seq.empty[InstanceInfo])(_.instances), respondTo))
+        .map(app ⇒ SetInstances(app.instances, respondTo))
         .recover { case NonFatal(t) ⇒
           log.error(t, t.getMessage)
           SetInstances(Nil, respondTo)

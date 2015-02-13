@@ -1,6 +1,8 @@
 package io.github.kender.spray.eureka.example
 
+import org.json4s.{DefaultFormats, Formats}
 import spray.http.HttpRequest
+import spray.httpx.Json4sJacksonSupport
 
 import scala.concurrent.Future._
 import scala.concurrent._
@@ -13,9 +15,11 @@ import spray.routing.{Directives, SimpleRoutingApp}
 import io.github.kender.spray.eureka.client.{EurekaConfig, HeartbeatClient, InstanceClient, RestClient}
 import org.slf4j.LoggerFactory
 
-object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
+object CompositeServiceMain extends App with SimpleRoutingApp with Directives with Json4sJacksonSupport {
   implicit val actorSystem = ActorSystem()
   import actorSystem.dispatcher
+
+  override implicit def json4sJacksonFormats: Formats = DefaultFormats
 
   val logger = LoggerFactory.getLogger(classOf[CompositeServiceMain])
 
@@ -37,23 +41,34 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives {
   // create a new RestClient from the eurekaConfig for the "backend" client configuration.
   val backendRestClient = RestClient(eurekaConfig, "backend")
 
+  // a data model object
+  case class RandomValue(length: Int, value: String)
+
   // create a 'backend' http function by applying the a basic spray pipeline which makes the call
   // and unmarshals the response into a string
-  val backend: (HttpRequest) => Future[String] = {
-    backendRestClient(sendReceive ~> unmarshal[String])
+  val backend: (HttpRequest) => Future[RandomValue] = {
+    backendRestClient(sendReceive ~> unmarshal[RandomValue])
   }
 
   // this function implements the "GET /" route
-  def shim(): Future[String] = for {
-    r1 ← backend(Get("/random?length=10"))
-    r2 ← backend(Get("/random?length=16"))
-  } yield {
-    r1 + ":" + r2
+  def shim(): Future[RandomValue] = {
+    // these are independent, so they can be declared head of the for-comprehension
+    val firstRequest  = backend(Get("/random?length=10"))
+    val secondRequest = backend(Get("/random?length=16"))
+
+    // when both requests yield a response, combine them into a single value
+    for {
+      r1 ← firstRequest map { _.value }
+      r2 ← secondRequest map { _.value }
+    } yield {
+      val composite = r1 + ":" + r2
+      RandomValue(composite.length, composite)
+    }
   }
 
   // this function implements the "GET /random?length" route
-  def random(length: Int): Future[String] = successful {
-    Random.alphanumeric.take(length).mkString
+  def random(length: Int): Future[RandomValue] = successful {
+    RandomValue(length, Random.alphanumeric.take(length).mkString)
   }
 
   // spray routing server and routes

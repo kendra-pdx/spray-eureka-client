@@ -1,13 +1,17 @@
+
 package io.github.kender.spray.eureka.client
+
+import org.json4s.jackson.Serialization
+import org.json4s.{NoTypeHints, DefaultFormats, Formats}
+import spray.httpx.Json4sJacksonSupport
 
 import scala.concurrent._
 
 import akka.actor.ActorSystem
 import spray.client.pipelining._
 import spray.http._
-import spray.json._
 
-import io.github.kender.spray.eureka.{DataCenterInfo, InstanceInfo}
+import io.github.kender.spray.eureka.{Port, Registration, DataCenterInfo, InstanceInfo}
 import org.slf4j.LoggerFactory
 
 /**
@@ -15,13 +19,14 @@ import org.slf4j.LoggerFactory
  * @param config EurekaConfig
  * @param actorSystem ActorSystem
  */
-class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
-
-  import spray.httpx.SprayJsonSupport._
+class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) extends Json4sJacksonSupport {
+  val instanceUrl = s"${config.serverUrl}/v2/apps/${config.instance.appId}"
 
   import actorSystem.dispatcher
-  import io.github.kender.spray.eureka.EurekaJsonProtocol._
   import io.github.kender.spray.eureka.client.Loggable._
+
+  override implicit def json4sJacksonFormats: Formats =
+    EurekaSerialization.Implicits.eurekaFormats
 
   type InstanceId = String
 
@@ -40,7 +45,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
    * @return A future which completes when after the call is complete.
    */
   def deRegister(): Future[Unit] = {
-    pipeline(Delete(s"${config.serverUrl}/v2/apps/${config.instance.appId}")).map(_ ⇒ Unit)
+    pipeline(Delete(instanceUrl)).map(_ ⇒ Unit)
   }
 
   /**
@@ -48,15 +53,16 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
    * @return A future containing the instance id which completes when after the call is complete.
    */
   def register(): Future[InstanceId] = {
-    val registration = InstanceInfo(
+    logger.info("registering instance: {}", config.instance.appId)
+    val instance = InstanceInfo(
       config.instance.hostName,
       config.instance.appId,
       config.instance.ipAddress,
       config.instance.vipAddress,
       config.instance.secureVipAddress,
       "UP",
-      Some(config.instance.port),
-      config.instance.securePort,
+      Some(Port(config.instance.port.toString)),
+      Port(config.instance.securePort.toString),
       config.instance.homePageUrl,
       config.instance.statusPageUrl,
       config.instance.healthCheckUrl,
@@ -65,8 +71,8 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) {
 
     pipeline(debugIt(logger) {
       Post(
-        s"${config.serverUrl}/v2/apps/${config.instance.appId}",
-        JsObject("instance" → registration.toJson))
+        instanceUrl,
+        Registration(instance))
     }) map { _ ⇒ config.instance.hostName }
   }
 }
