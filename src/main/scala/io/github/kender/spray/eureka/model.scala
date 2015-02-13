@@ -1,5 +1,7 @@
 package io.github.kender.spray.eureka
 
+import scala.util.control.NonFatal
+
 case class DataCenterInfo(name: String = "MyOwn")
 
 case class LeaseInfo()
@@ -20,6 +22,15 @@ case class Registration(
 case class Port(
   // thanks, jaxb
   `$`: String)
+
+object Port {
+  def apply(port: Int): Port = Port(port.toString)
+  def unapply(p: String): Option[Int] = try {
+    Some(p.toInt)
+  } catch { case NonFatal(_) =>
+    None
+  }
+}
 
 case class InstanceInfo(
   hostName: String,

@@ -1,19 +1,17 @@
 package io.github.kender.spray.eureka.client
 
-import org.json4s.{DefaultFormats, Formats}
+import akka.actor.ActorSystem
+import io.github.kender.spray.eureka.{Application, Applications}
+import org.json4s.Formats
+import org.slf4j.LoggerFactory
+import spray.client.pipelining._
+import spray.http.HttpHeaders.RawHeader
+import spray.http._
 import spray.httpx.Json4sJacksonSupport
 
 import scala.concurrent.Future
 
-import akka.actor.ActorSystem
-import spray.client.pipelining._
-import spray.http.HttpHeaders.RawHeader
-import spray.http._
-
-import io.github.kender.spray.eureka.{Applications, Application}
-
 object DiscoveryClient {
-
   case class VipLookupResponse(applications: Applications)
 }
 
@@ -24,14 +22,18 @@ object DiscoveryClient {
  */
 class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSystem) extends Json4sJacksonSupport {
   import actorSystem.dispatcher
-  import DiscoveryClient._
+  import io.github.kender.spray.eureka.client.DiscoveryClient._
 
-  override implicit def json4sJacksonFormats: Formats = DefaultFormats
+  val logger = LoggerFactory.getLogger(classOf[DiscoveryClient])
 
-  private def http: HttpRequest ⇒ Future[Option[VipLookupResponse]] = {
+  override implicit def json4sJacksonFormats: Formats = EurekaSerialization.Implicits.eurekaFormats
+
+  private def http: HttpRequest ⇒ Future[VipLookupResponse] = {
     addHeader(RawHeader("Accept", "application/json")) ~>
       sendReceive ~>
-      unmarshal[Option[VipLookupResponse]]
+      logResponse(r => logger.debug(s"response: {}", r)) ~>
+      unmarshal[VipLookupResponse] ~>
+      logValue[VipLookupResponse]((r: VipLookupResponse) => logger.debug(s"unmarshaled: {}", r))
   }
 
   /**
@@ -39,9 +41,9 @@ class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSys
    * @param vipAddress the target vip
    * @return A future of optional application. None with not found.
    */
-  def vips(vipAddress: String): Future[Option[Application]] = {
+  def vips(vipAddress: String): Future[Application] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/vips/$vipAddress"
-    http(Get(uri)).map(_.map(_.applications.application))
+    http(Get(uri)).map(_.applications.application)
   }
 
   /**
@@ -49,8 +51,8 @@ class DiscoveryClient(eurekaConfig: EurekaConfig)(implicit actorSystem: ActorSys
    * @param vipAddress the target secure vip
    * @return A future of optional application. None with not found.
    */
-  def svips(vipAddress: String): Future[Option[Application]] = {
+  def svips(vipAddress: String): Future[Application] = {
     val uri = s"${eurekaConfig.serverUrl}/v2/svips/$vipAddress"
-    http(Get(uri)).map(_.map(_.applications.application))
+    http(Get(uri)).map(_.applications.application)
   }
 }

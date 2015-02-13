@@ -1,7 +1,8 @@
 
 package io.github.kender.spray.eureka.client
 
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.jackson.Serialization
+import org.json4s.{NoTypeHints, DefaultFormats, Formats}
 import spray.httpx.Json4sJacksonSupport
 
 import scala.concurrent._
@@ -21,11 +22,11 @@ import org.slf4j.LoggerFactory
 class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) extends Json4sJacksonSupport {
   val instanceUrl = s"${config.serverUrl}/v2/apps/${config.instance.appId}"
 
-
   import actorSystem.dispatcher
   import io.github.kender.spray.eureka.client.Loggable._
 
-  override implicit def json4sJacksonFormats: Formats = DefaultFormats
+  override implicit def json4sJacksonFormats: Formats =
+    EurekaSerialization.Implicits.eurekaFormats
 
   type InstanceId = String
 
@@ -52,6 +53,7 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) ex
    * @return A future containing the instance id which completes when after the call is complete.
    */
   def register(): Future[InstanceId] = {
+    logger.info("registering instance: {}", config.instance.appId)
     val instance = InstanceInfo(
       config.instance.hostName,
       config.instance.appId,
