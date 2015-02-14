@@ -1,5 +1,6 @@
 package io.github.kender.spray.eureka.example
 
+import io.github.kender.spray.eureka.{DataCenterInfo, AmazonMetaData}
 import org.json4s.{DefaultFormats, Formats}
 import spray.http.HttpRequest
 import spray.httpx.Json4sJacksonSupport
@@ -30,7 +31,15 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives wi
   // register the instance with Eureka.
   new InstanceClient(eurekaConfig) {
     // when registration is complete, begin sending heartbeats.
-    register() map { instanceId ⇒
+    val amazon = AmazonMetaData(
+      "i-abcd1234",
+      "ami-4321dcba",
+      "us-west-2a",
+      "localhost",
+      "127.0.0.1",
+      "foohost",
+      "m1.enormous")
+    register(dataCenterInfo = DataCenterInfo.amazon(amazon)) map { instanceId ⇒
       new HeartbeatClient(eurekaConfig) {
         // the heartbeat callback always succeeds in this case.
         start(() ⇒ Success {/* OK */}, instanceId)

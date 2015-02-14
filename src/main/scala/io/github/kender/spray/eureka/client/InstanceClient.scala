@@ -73,6 +73,6 @@ class InstanceClient(config: EurekaConfig)(implicit actorSystem: ActorSystem) ex
       Post(
         instanceUrl,
         Registration(instance))
-    }) map { _ ⇒ config.instance.hostName }
+    }) map { _ ⇒ dataCenterInfo.metadata.map(_.`instance-id`) getOrElse config.instance.hostName }
   }
 }
