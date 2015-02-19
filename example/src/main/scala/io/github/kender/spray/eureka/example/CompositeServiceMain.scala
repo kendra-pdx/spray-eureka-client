@@ -60,7 +60,7 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives wi
   }
 
   // this function implements the "GET /" route
-  def shim(): Future[RandomValue] = {
+  def composition(): Future[RandomValue] = {
     // these are independent, so they can be declared head of the for-comprehension
     val firstRequest  = backend(Get("/random?length=10"))
     val secondRequest = backend(Get("/random?length=16"))
@@ -88,7 +88,7 @@ object CompositeServiceMain extends App with SimpleRoutingApp with Directives wi
       }
     } ~
     (get & pathEndOrSingleSlash) {
-      onSuccess(shim()) { value ⇒
+      onSuccess(composition()) { value ⇒
         complete(value)
       }
     }
